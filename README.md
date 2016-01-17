@@ -41,7 +41,9 @@ If you like the music, support the artist !
 - [X] GUI
 - [X] Can download single music
 - [X] Ask at first start for the 'client ID'
+- [X] Create a Soundrain.app
 - [ ] Improved GUI
 - [ ] InApp tutorial
 - [ ] Can download playlist
 - [ ] Add shortcut
+- [ ] Split code for GUI and Downloader into two different files
