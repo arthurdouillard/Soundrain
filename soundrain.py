@@ -20,6 +20,7 @@ from PyQt5.QtCore       import (QSettings,     QObject,        pyqtSignal,
 #import module for soundcloud, music handling, and file downloading
 import soundcloud
 import urllib
+import httplib2
 import requests
 from mutagen.mp3        import  MP3,           EasyMP3
 from mutagen.id3        import  ID3,           APIC
@@ -255,7 +256,15 @@ class WindowSR(QMainWindow):
 
     def get_track(self):
         """Returns track"""
-        
+       
+        http_page = httplib2.Http()
+        resp = http_page.request(self.text_url.text(), "HEAD")
+        if int(resp[0]["status"]) >= 400:
+            QMessageBox.about(self,
+                              "Error URL",
+                              "URL doesn't exist.")
+            return False
+
         try:
             self.track = self.client.get("/resolve", url=self.text_url.text())
         except:
@@ -263,10 +272,13 @@ class WindowSR(QMainWindow):
             self.init_client_id()
             self.get_track()
 
+        return True
+
     def get_music_info(self):
         """Get music info, which will be stocked in self.track, and fill info"""
 
-        self.get_track()
+        if not self.get_track():
+            return
 
         if not self.is_playlist:
             self.artist.setText(self.track.user['username'])
