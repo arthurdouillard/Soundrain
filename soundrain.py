@@ -126,7 +126,7 @@ class WindowSR(QMainWindow):
         row_dl      = QHBoxLayout()
         row_dl.addStretch(1)
         self.but_dl = QPushButton("Make it rain !", self)
-        self.but_dl.clicked.connect(self.download)
+        self.but_dl.clicked.connect(self.manage_download)
         row_dl.addWidget(self.but_dl)
 
         # Add every row to the vertical grid
@@ -150,9 +150,9 @@ class WindowSR(QMainWindow):
         self.client_id = None
         self.setting   = QSettings(QSettings.UserScope, "BoBibelo",
                                    "SoundRain", self)
-        if not self.setting.value("SR_hgjhgjhg"): # Setting never set
+        if not self.setting.value("SR_bool"): # Setting never set
             self.client_id_box()
-            self.setting.setValue("SR_authj", True)
+            self.setting.setValue("SR_bool", True)
             self.setting.setValue("SR_id", self.client_id)
         else:
             self.client_id = self.setting.value("SR_id")
@@ -174,6 +174,7 @@ class WindowSR(QMainWindow):
         label_help.setTextInteractionFlags(Qt.TextBrowserInteraction);
         label_help.setOpenExternalLinks(True);
 
+        self.got_id = False
         button_cancel = QPushButton("Cancel", self.client_id_bo)
         button_cancel.clicked.connect(self.reject_id)
         button_accept = QPushButton("Ok", self.client_id_bo)
@@ -197,14 +198,15 @@ class WindowSR(QMainWindow):
 
         self.client_id = self.input_id.text().strip()
         if len(self.client_id) != 0:
+            self.got_id = True
             self.client_id_bo.close()
-
 
     def reject_id(self):
         """Quit app after user not giving client id"""
 
-        self.close()
-        sys.exit(1)
+        if not self.got_id:
+            self.close()
+            sys.exit(1)
 
     def open_f(self):
         """Choose the directory where to save music"""
@@ -229,19 +231,54 @@ class WindowSR(QMainWindow):
             QMessageBox.about(self, "Invalid URL",
                               "The requested URL is invalid: %s" % self.text_url.text())
         else:
+            if "/sets/" in self.text_url.text(): # Is playlist
+                self.artist.setText("Not available for playlist.")
+                self.name.setText("Not available for playlist.")
+                self.disable_input()
+            else:
+                self.enable_input()
             self.get_music_info()
+
+    def disable_input(self):
+        """Disable artist, and name in case of playlist"""
+
+        self.is_playlist = True
+        self.artist.setDisabled(True)
+        self.name.setDisabled(True)
+
+    def enable_input(self):
+        """Enable artist, and name after a playlist"""
+
+        self.is_playlist = False
+        self.artist.setDisabled(False)
+        self.name.setDisabled(False)
+
+    def get_track(self):
+        """Returns track"""
+        
+        try:
+            self.track = self.client.get("/resolve", url=self.text_url.text())
+        except:
+            self.setting.setValue("SR_bool", False)
+            self.init_client_id()
+            self.get_track()
 
     def get_music_info(self):
         """Get music info, which will be stocked in self.track, and fill info"""
 
-        self.track = self.client.get("/resolve", url=self.text_url.text())
-        self.artist.setText(self.track.user['username'])
-        self.name.setText(self.track.title)
+        self.get_track()
+
+        if not self.is_playlist:
+            self.artist.setText(self.track.user['username'])
+            self.name.setText(self.track.title)
+            self.image = requests.get(self.modifiy_image_size()).content
+            self.cover.loadFromData(self.image)
+            self.cover = self.cover.scaledToWidth(280)
+            self.label_image.setPixmap(self.cover)
+        else:
+            # Get the last part of URL ( == to playlist name)
+            self.album.setText(self.text_url.text().rsplit('/', 1)[-1])
         self.genre.setText(self.track.genre)
-        self.image = requests.get(self.modifiy_image_size()).content
-        self.cover.loadFromData(self.image)
-        self.cover = self.cover.scaledToWidth(280)
-        self.label_image.setPixmap(self.cover)
 
     def modifiy_image_size(self):
         """Change artwork_url so the image can (potentially) look better"""
@@ -252,16 +289,32 @@ class WindowSR(QMainWindow):
         else:
             return artwork_url
 
+    def manage_download(self):
+        """Manage download in case of playlist"""
+
+        if self.is_playlist:
+            playlist = client.get('/playlists/%s' % (self.track.id))
+            for song in playlist.tracks:
+                self.track = song
+                self.download()
+            self.success_box() # Success box for playlist
+            self.enable_input()
+        else:
+            self.download()
+            self.success_box() # Succes box for single song
+
     def download(self):
+        """Try to download a single song"""
         try:
             self.fi_mp3, headers = urllib.request.urlretrieve(self.create_url(),
                                                               self.create_filename())
         except:
             QMessageBox.about(self, "Error Download",
-                              "Download failed for an unknown reason, be sure that save path is correct.")
-            return
+                              "Download failed for song: %s" % self.track.title)
+            return False
 
         self.add_tags()
+        return True
 
     def add_tags(self):
         """Add artists name, music name, album, genre, and cover"""
@@ -269,8 +322,12 @@ class WindowSR(QMainWindow):
         # Set artist name, music name, album, and genre
         audio_file = EasyMP3(self.fi_mp3)
         audio_file.tags = None
-        audio_file["artist"] = self.artist.text()
-        audio_file["title"]  = self.name.text()
+        if self.is_playlist:
+            audio_file["artist"] = self.track.user["username"]
+            audio_file["title"]  = self.track.title
+        else:
+            audio_file["artist"] = self.artist.text()
+            audio_file["title"]  = self.name.text()
         audio_file["genre"]  = self.genre.text()
         audio_file["album"]  = self.album.text()
         audio_file.save()
@@ -293,14 +350,18 @@ class WindowSR(QMainWindow):
                 )
         )
         audio_file.save()
-        self.success_box()
 
     def success_box(self):
         """Display a sucess box"""
 
-        QMessageBox.about(self, "Success",
-                          "%s have just been download right into %s"
-                          % (self.name.text(), self.text_file.text()))
+        if self.is_playlist:
+            QMessageBox.about(self, "Success",
+                              "%s playlist have just been download right into %s"
+                              % (self.text_url.text().rsplit('/', 1)[-1], self.text_file.text()))
+        else:
+            QMessageBox.about(self, "Success",
+                              "%s have just been download right into %s"
+                              % (self.name.text(), self.text_file.text()))
 
     def create_url(self):
         url_str = "http://api.soundcloud.com/tracks/%s/stream?client_id=%s" % (self.track.id, self.client_id)
