@@ -13,16 +13,16 @@ from PyQt5.QtWidgets    import (QApplication,  QWidget,        QDesktopWidget,
                                 QTextEdit,     QHBoxLayout,    QVBoxLayout,
                                 QLabel,        QLineEdit,      QPushButton,
                                 QFrame,        QFileDialog,    QMessageBox,
-                                QInputDialog,  QErrorMessage)
-from PyQt5.QtGui        import QPixmap
-from PyQt5.QtCore       import (QSettings, QObject, pyqtSignal, pyqtSlot)
+                                QInputDialog,  QErrorMessage,  QDialog)
+from PyQt5.QtGui        import  QPixmap,       QIcon
+from PyQt5.QtCore       import (QSettings,     QObject,        pyqtSignal,
+                                pyqtSlot,      Qt)
 #import module for soundcloud, music handling, and file downloading
 import soundcloud
-from mutagen.mp3 import MP3, EasyMP3
-from mutagen.id3 import ID3
-from mutagen.id3 import APIC
 import urllib
 import requests
+from mutagen.mp3        import  MP3,           EasyMP3
+from mutagen.id3        import  ID3,           APIC
 
 class WindowSR(QMainWindow):
     """Main window of SoundRain"""
@@ -38,9 +38,10 @@ class WindowSR(QMainWindow):
         """Create main parts of the window"""
 
         # Main Window
-        self.resize(400, 500)
+        self.setFixedSize(900, 500)
         self.center()
         self.setWindowTitle("SoundRain")
+        self.setWindowIcon(QIcon('resources/soundrainlogo.jpg'))
 
         # Central Widget
         self.central_widget = QWidget()
@@ -70,7 +71,12 @@ class WindowSR(QMainWindow):
         # Cover image
         column_image = QVBoxLayout()
         self.label_image  = QLabel(self)
-        self.cover = QPixmap(200, 200)
+        self.label_image.setMaximumHeight(280)
+        self.label_image.setMinimumHeight(280)
+        self.label_image.setMaximumWidth(280)
+        self.label_image.setMinimumHeight(280)
+        self.cover = QPixmap(280, 280)
+        self.cover.load("resources/unknownperson.jpg")
         self.label_image.setPixmap(self.cover)
         column_image.addWidget(self.label_image)
         # music info
@@ -144,7 +150,7 @@ class WindowSR(QMainWindow):
         self.client_id = None
         self.setting   = QSettings(QSettings.UserScope, "BoBibelo",
                                    "SoundRain", self)
-        if not self.setting.value("SR_authj"): # Setting never set
+        if not self.setting.value("SR_hgjhgjhg"): # Setting never set
             self.client_id_box()
             self.setting.setValue("SR_authj", True)
             self.setting.setValue("SR_id", self.client_id)
@@ -155,19 +161,57 @@ class WindowSR(QMainWindow):
     def client_id_box(self):
         """Generate the client id box"""
 
-        bo = False
-        self.client_id, bo = QInputDialog.getText(self, "Client ID",
-                                                  "Enter your Soundcloud Client ID",
-                                                   bo)
-        if not bo: # User is a little rebel and don't want to give his id
-            self.close()
-            sys.exit(1)
+        self.client_id_bo = QDialog(self)
+        self.client_id_bo.setFixedSize(400, 200)
+        self.client_id_bo.setModal(True)
+
+        client_id_grid = QVBoxLayout()
+        label_request  = QLabel("Enter your Soundcloud Client ID:", self.client_id_bo)
+        self.input_id  = QLineEdit(self.client_id_bo)
+        label_help     = QLabel("<a href=\"http://bobibelo.github.io/soundrain/help.html\">Need help ?</a>",
+                                self.client_id_bo)
+        label_help.setTextFormat(Qt.RichText);
+        label_help.setTextInteractionFlags(Qt.TextBrowserInteraction);
+        label_help.setOpenExternalLinks(True);
+
+        button_cancel = QPushButton("Cancel", self.client_id_bo)
+        button_cancel.clicked.connect(self.reject_id)
+        button_accept = QPushButton("Ok", self.client_id_bo)
+        button_accept.clicked.connect(self.get_id)
+        button_grid   = QHBoxLayout()
+        button_grid.addStretch(1)
+        button_grid.addWidget(button_cancel)
+        button_grid.addWidget(button_accept)
+
+        client_id_grid.addWidget(label_request)
+        client_id_grid.addWidget(self.input_id)
+        client_id_grid.addWidget(label_help)
+        client_id_grid.addLayout(button_grid)
+        self.client_id_bo.setLayout(client_id_grid)
+
+        self.client_id_bo.rejected.connect(self.reject_id)
+        self.client_id_bo.exec_()
+
+    def get_id(self):
+        """Get client id from the qdialog"""
+
+        self.client_id = self.input_id.text().strip()
+        if len(self.client_id) != 0:
+            self.client_id_bo.close()
+
+
+    def reject_id(self):
+        """Quit app after user not giving client id"""
+
+        self.close()
+        sys.exit(1)
 
     def open_f(self):
         """Choose the directory where to save music"""
 
         self.dirname = QFileDialog.getExistingDirectory()
-        self.text_file.setText(self.dirname)
+        if self.dirname and len(self.dirname) > 0:
+            self.text_file.setText(self.dirname)
 
     def center(self):
         """Places window in the screen's center"""
@@ -194,9 +238,19 @@ class WindowSR(QMainWindow):
         self.artist.setText(self.track.user['username'])
         self.name.setText(self.track.title)
         self.genre.setText(self.track.genre)
-        self.image = requests.get(self.track.artwork_url).content
+        self.image = requests.get(self.modifiy_image_size()).content
         self.cover.loadFromData(self.image)
+        self.cover = self.cover.scaledToWidth(280)
         self.label_image.setPixmap(self.cover)
+
+    def modifiy_image_size(self):
+        """Change artwork_url so the image can (potentially) look better"""
+
+        artwork_url = self.track.artwork_url
+        if "large" in artwork_url:
+            return artwork_url.replace("large", "t500x500")
+        else:
+            return artwork_url
 
     def download(self):
         try:
@@ -222,8 +276,9 @@ class WindowSR(QMainWindow):
         audio_file.save()
 
         # Determine the mime
+        artwork_url = self.modifiy_image_size()
         mime = "image/jpeg"
-        if ".png" in self.create_url():
+        if ".png" in artwork_url:
             mime = "image/png"
 
         # Set cover
