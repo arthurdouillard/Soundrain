@@ -1,3 +1,6 @@
+![SoundRain Logo](resources/soundrainlogo.jpg)
+
+
 # Soundrain
 ---
 
