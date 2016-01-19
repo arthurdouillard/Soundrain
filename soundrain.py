@@ -56,6 +56,7 @@ class WindowSR(QMainWindow):
         row_url   = QHBoxLayout()
         label_url = QLabel("URL:", self)
         self.text_url  = QLineEdit(self)
+        self.text_url.textChanged.connect(self.block_dl)
         self.but_url   = QPushButton("Search", self)
         self.but_url.clicked.connect(self.check_url)
         row_url.addWidget(label_url)
@@ -126,13 +127,18 @@ class WindowSR(QMainWindow):
 
         # Download button row
         row_dl      = QHBoxLayout()
-        self.bar_dl      = QProgressBar(self)
+        self.bar_dl = QProgressBar(self)
         self.bar_dl.setFixedSize(600, 30)
         self.bar_dl.setMaximum(100)
         self.bar_dl.setMinimum(0)
-        self.but_dl = QPushButton("Make it rain !", self)
+        self.bar_dl.hide()
+        self.label_dl = QLabel(self)
+        self.label_dl.hide()
+        self.but_dl = QPushButton("Download", self)
         self.but_dl.clicked.connect(self.manage_download)
+        self.but_dl.setDisabled(True)
         row_dl.addWidget(self.bar_dl)
+        row_dl.addWidget(self.label_dl)
         row_dl.addStretch(1)
         row_dl.addWidget(self.but_dl)
 
@@ -238,6 +244,7 @@ class WindowSR(QMainWindow):
             QMessageBox.about(self, "Invalid URL",
                               "The requested URL is invalid: %s" % self.text_url.text())
         else:
+            self.but_dl.setDisabled(False)
             if "/sets/" in self.text_url.text(): # Is playlist
                 self.artist.setText("Not available for playlist.")
                 self.name.setText("Not available for playlist.")
@@ -313,22 +320,31 @@ class WindowSR(QMainWindow):
 
         if self.is_playlist:
             playlist = self.client.get('/playlists/%s' % (self.track.id))
+            count = 1
+            self.label_dl.show()
             for song_url in playlist.tracks:
+                self.label_dl.setText("%d / %d" % (count, len(playlist.tracks)))
+                count += 1
                 self.url_str = song_url["permalink_url"]
                 self.get_track()
                 self.image = requests.get(self.modifiy_image_size()).content
                 self.download()
+            self.label_dl.hide()
             self.success_box() # Success box for playlist
             self.enable_input()
         else:
-            self.download()
-            self.success_box() # Succes box for single song
+            if self.download():
+                self.success_box() # Succes box for single song
+
+        self.reset()
 
     def download(self):
         """Try to download a single song"""
 
+
         self.setDisabled(True)
         self.bar_dl.setDisabled(False)
+        self.bar_dl.show()
         try:
             self.fi_mp3, headers = urllib.request.urlretrieve(self.create_url(),
                                                               self.create_filename(),
@@ -337,11 +353,30 @@ class WindowSR(QMainWindow):
             QMessageBox.about(self, "Error Download",
                               "Download failed for song: %s" % self.track.title)
             self.setDisabled(False)
+            self.bar_dl.hide()
             return False
 
         self.add_tags()
         self.setDisabled(False)
+        self.bar_dl.hide()
         return True
+
+    def reset(self):
+        """Reset all input & image after end of download"""
+
+        self.text_url.setText("")
+        self.artist.setText("")
+        self.name.setText("")
+        self.album.setText("")
+        self.genre.setText("")
+        self.cover.load("resources/unknownperson.jpg")
+        self.label_image.setPixmap(self.cover)
+        self.but_dl.setDisabled(True)
+
+    def block_dl(self):
+        """Disable download button if user change URL (forces him to re-'search')"""
+
+        self.but_dl.setDisabled(True)
 
     def add_tags(self):
         """Add artists name, music name, album, genre, and cover"""
@@ -425,9 +460,9 @@ class WindowSR(QMainWindow):
             self.bar_dl.setValue(0)
         else:
             amount_read = blocks_read * block_size
-            self.bar_dl.setValue(int((amount_read / total_size) * 100))
+            percent     = int((amount_read / total_size) * 100) # Percent of achieved download
+            self.bar_dl.setValue(percent)
             QApplication.processEvents()
-            #print ("%d / %d" % (amount_read, total_size))
         return
 
 
