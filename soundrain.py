@@ -258,7 +258,7 @@ class WindowSR(QMainWindow):
         """Returns track"""
        
         http_page = httplib2.Http()
-        resp = http_page.request(self.text_url.text(), "HEAD")
+        resp = http_page.request(self.url_str, "HEAD")
         if int(resp[0]["status"]) >= 400:
             QMessageBox.about(self,
                               "Error URL",
@@ -266,7 +266,7 @@ class WindowSR(QMainWindow):
             return False
 
         try:
-            self.track = self.client.get("/resolve", url=self.text_url.text())
+            self.track = self.client.get("/resolve", url=self.url_str)
         except:
             self.setting.setValue("SR_bool", False)
             self.init_client_id()
@@ -277,6 +277,7 @@ class WindowSR(QMainWindow):
     def get_music_info(self):
         """Get music info, which will be stocked in self.track, and fill info"""
 
+        self.url_str = self.text_url.text()
         if not self.get_track():
             return
 
@@ -305,9 +306,11 @@ class WindowSR(QMainWindow):
         """Manage download in case of playlist"""
 
         if self.is_playlist:
-            playlist = client.get('/playlists/%s' % (self.track.id))
-            for song in playlist.tracks:
-                self.track = song
+            playlist = self.client.get('/playlists/%s' % (self.track.id))
+            for song_url in playlist.tracks:
+                self.url_str = song_url["permalink_url"]
+                self.get_track()
+                self.image = requests.get(self.modifiy_image_size()).content
                 self.download()
             self.success_box() # Success box for playlist
             self.enable_input()
