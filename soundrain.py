@@ -13,8 +13,9 @@ from PyQt5.QtWidgets    import (QApplication,  QWidget,        QDesktopWidget,
                                 QTextEdit,     QHBoxLayout,    QVBoxLayout,
                                 QLabel,        QLineEdit,      QPushButton,
                                 QFrame,        QFileDialog,    QMessageBox,
-                                QInputDialog,  QErrorMessage,  QDialog)
-from PyQt5.QtGui        import  QPixmap,       QIcon
+                                QInputDialog,  QErrorMessage,  QDialog,
+                                QProgressBar)
+from PyQt5.QtGui        import  (QPixmap,       QIcon)
 from PyQt5.QtCore       import (QSettings,     QObject,        pyqtSignal,
                                 pyqtSlot,      Qt)
 #import module for soundcloud, music handling, and file downloading
@@ -125,9 +126,14 @@ class WindowSR(QMainWindow):
 
         # Download button row
         row_dl      = QHBoxLayout()
-        row_dl.addStretch(1)
+        self.bar_dl      = QProgressBar(self)
+        self.bar_dl.setFixedSize(600, 30)
+        self.bar_dl.setMaximum(100)
+        self.bar_dl.setMinimum(0)
         self.but_dl = QPushButton("Make it rain !", self)
         self.but_dl.clicked.connect(self.manage_download)
+        row_dl.addWidget(self.bar_dl)
+        row_dl.addStretch(1)
         row_dl.addWidget(self.but_dl)
 
         # Add every row to the vertical grid
@@ -320,15 +326,21 @@ class WindowSR(QMainWindow):
 
     def download(self):
         """Try to download a single song"""
+
+        self.setDisabled(True)
+        self.bar_dl.setDisabled(False)
         try:
             self.fi_mp3, headers = urllib.request.urlretrieve(self.create_url(),
-                                                              self.create_filename())
+                                                              self.create_filename(),
+                                                              reporthook=self.reporthook)
         except:
             QMessageBox.about(self, "Error Download",
                               "Download failed for song: %s" % self.track.title)
+            self.setDisabled(False)
             return False
 
         self.add_tags()
+        self.setDisabled(False)
         return True
 
     def add_tags(self):
@@ -365,6 +377,8 @@ class WindowSR(QMainWindow):
                 )
         )
         audio_file.save()
+        
+        audio_file = EasyMP3(self.fi_mp3)
 
     def success_box(self):
         """Display a sucess box"""
@@ -384,7 +398,10 @@ class WindowSR(QMainWindow):
 
     def create_filename(self):
         path = self.text_file.text()
-        name = self.track.title + ".mp3"
+        if self.is_playlist:
+            name = self.track.title + ".mp3"
+        else:
+            name = self.name.text() + ".mp3"
         fi_str  = os.path.join(path, name)
         return fi_str
 
@@ -400,6 +417,21 @@ class WindowSR(QMainWindow):
 
         path = "/Users/" + user + "/Music"
         return path
+
+    def reporthook(self, blocks_read, block_size, total_size):
+        """Tracks the progress of music download"""
+
+        if blocks_read == 0:
+            self.bar_dl.setValue(0)
+        else:
+            amount_read = blocks_read * block_size
+            self.bar_dl.setValue(int((amount_read / total_size) * 100))
+            QApplication.processEvents()
+            #print ("%d / %d" % (amount_read, total_size))
+        return
+
+
+        
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
