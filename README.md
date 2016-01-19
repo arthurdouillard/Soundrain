@@ -46,7 +46,8 @@ If you like the music, support the artist !
 - [X] Ask at first start for the 'client ID'
 - [X] Create a Soundrain.app
 - [ ] Improved GUI
-- [ ] InApp tutorial
-- [ ] Can download playlist
+- [ ] InApp tutorial | Web tutorial
+- [X ] Can download playlist
 - [ ] Add shortcut
-- [ ] Split code for GUI and Downloader into two different files
+- [ ] Split code for GUI and Downloader into two different files (I'm laaazy)
+- [ ] Add a link to place where you can buy artist's music
