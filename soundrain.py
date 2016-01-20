@@ -304,6 +304,8 @@ class WindowSR(QMainWindow):
         else:
             # Get the last part of URL ( == to playlist name)
             self.album.setText(self.text_url.text().rsplit('/', 1)[-1])
+            if self.album.text() != "":
+                self.text_file.setText("%s/%s" % (self.text_file.text(), self.album.text()))
         self.genre.setText(self.track.genre)
 
     def modifiy_image_size(self):
@@ -372,6 +374,7 @@ class WindowSR(QMainWindow):
         self.cover.load("resources/unknownperson.jpg")
         self.label_image.setPixmap(self.cover)
         self.but_dl.setDisabled(True)
+        self.text_file.setText(self.default_path())
 
     def block_dl(self):
         """Disable download button if user change URL (forces him to re-'search')"""
@@ -420,11 +423,11 @@ class WindowSR(QMainWindow):
 
         if self.is_playlist:
             QMessageBox.about(self, "Success",
-                              "%s playlist have just been download right into %s"
+                              "%s playlist has just been downloaded right into %s"
                               % (self.text_url.text().rsplit('/', 1)[-1], self.text_file.text()))
         else:
             QMessageBox.about(self, "Success",
-                              "%s have just been download right into %s"
+                              "%s has just been downloaded right into %s"
                               % (self.name.text(), self.text_file.text()))
 
     def create_url(self):
@@ -437,6 +440,10 @@ class WindowSR(QMainWindow):
             name = self.track.title + ".mp3"
         else:
             name = self.name.text() + ".mp3"
+
+        if not os.path.exists(path):
+            os.makedirs(path)
+
         fi_str  = os.path.join(path, name)
         return fi_str
 
@@ -451,6 +458,7 @@ class WindowSR(QMainWindow):
             user = "Shared"
 
         path = "/Users/" + user + "/Music"
+
         return path
 
     def reporthook(self, blocks_read, block_size, total_size):
