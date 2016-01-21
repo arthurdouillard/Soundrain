@@ -44,7 +44,7 @@ class WindowSR(QMainWindow):
         self.setFixedSize(900, 500)
         self.center()
         self.setWindowTitle("SoundRain")
-        self.setWindowIcon(QIcon('resources/soundrainlogo.jpg'))
+        self.setWindowIcon(QIcon('soundrainlogo.jpg'))
 
         # Central Widget
         self.central_widget = QWidget()
@@ -80,7 +80,7 @@ class WindowSR(QMainWindow):
         self.label_image.setMaximumWidth(280)
         self.label_image.setMinimumHeight(280)
         self.cover = QPixmap(280, 280)
-        self.cover.load("resources/unknownperson.jpg")
+        self.cover.load("unknownperson.jpg")
         self.label_image.setPixmap(self.cover)
         column_image.addWidget(self.label_image)
         # music info
@@ -372,7 +372,7 @@ class WindowSR(QMainWindow):
         self.name.setText("")
         self.album.setText("")
         self.genre.setText("")
-        self.cover.load("resources/unknownperson.jpg")
+        self.cover.load("unknownperson.jpg")
         self.label_image.setPixmap(self.cover)
         self.but_dl.setDisabled(True)
         self.text_file.setText(self.default_path())
