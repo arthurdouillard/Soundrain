@@ -26,6 +26,7 @@ import requests
 from mutagen.mp3        import  MP3,           EasyMP3
 from mutagen.id3        import  ID3,           APIC
 
+
 class WindowSR(QMainWindow):
     """Main window of SoundRain"""
 
