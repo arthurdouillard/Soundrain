@@ -39,6 +39,13 @@ If you like the music, support the artist !
 
 ---
 
+### Command-Line
+
+To launch it in CLI:
+`python3 SoundRain.py`
+
+---
+
 ### TODO List
 
 - [X] GUI
@@ -47,7 +54,19 @@ If you like the music, support the artist !
 - [X] Create a Soundrain.app
 - [ ] Improved GUI
 - [ ] InApp tutorial | Web tutorial
-- [X ] Can download playlist
+- [X] Can download playlist
 - [ ] Add shortcut
 - [ ] Split code for GUI and Downloader into two different files (I'm laaazy)
 - [ ] Add a link to place where you can buy artist's music
+
+---
+
+### Bundle
+
+If you want to bundle, use `make`. However i cannot confirm if the .app will work
+this way as i encountred a [bug](http://stackoverflow.com/questions/34911433/abort-crash-with-app-made-by-py2app)
+, i didn't managed yet to correct.
+
+However `make debug` will create a .app (but still use your libraries) but this will work.
+
+You will need py2app for it.
