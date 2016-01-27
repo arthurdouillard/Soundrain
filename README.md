@@ -39,7 +39,12 @@ If you like the music, support the artist !
 
 ---
 
-### Command-Line
+### How to use it
+
+You'll need module from requirements.txt plus pyqt5 and sip.
+    pip install -r requirements.txt
+    brew install sip
+    brew install pyqt5
 
 To launch it in CLI:
 `python3 SoundRain.py`
@@ -63,10 +68,8 @@ To launch it in CLI:
 
 ### Bundle
 
-If you want to bundle, use `make`. However i cannot confirm if the .app will work
-this way as i encountred a [bug](http://stackoverflow.com/questions/34911433/abort-crash-with-app-made-by-py2app)
-, i didn't managed yet to correct.
+If you want to bundle for OS X, install py2app and run:
 
-However `make debug` will create a .app (but still use your libraries) but this will work.
-
-You will need py2app for it.
+* `make` for standalone
+* `make debug` for semi-standalone
+* `make clean` for removing `dist/` and `build/`

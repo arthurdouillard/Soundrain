@@ -298,8 +298,10 @@ class WindowSR(QMainWindow):
         if not self.is_playlist:
             self.artist.setText(self.track.user['username'])
             self.name.setText(self.track.title)
-            self.image = requests.get(self.modifiy_image_size()).content
-            self.cover.loadFromData(self.image)
+            url = self.modifiy_image_size()
+            if url:
+                self.image = requests.get(url).content
+                self.cover.loadFromData(self.image)
             self.cover = self.cover.scaledToWidth(280)
             self.label_image.setPixmap(self.cover)
         else:
@@ -313,6 +315,8 @@ class WindowSR(QMainWindow):
         """Change artwork_url so the image can (potentially) look better"""
 
         artwork_url = self.track.artwork_url
+        if not artwork_url:
+            return None
         if "large" in artwork_url:
             return artwork_url.replace("large", "t500x500")
         else:
@@ -332,8 +336,12 @@ class WindowSR(QMainWindow):
                 self.get_track()
                 self.image = requests.get(self.modifiy_image_size()).content
                 self.download()
+
+            if len(playlist.tracks) == 0:
+                self.fail_box()
+            else:
+                self.success_box() # Success box for playlist
             self.label_dl.hide()
-            self.success_box() # Success box for playlist
             self.enable_input()
         else:
             if self.download():
@@ -353,8 +361,7 @@ class WindowSR(QMainWindow):
                                                               self.create_filename(),
                                                               reporthook=self.reporthook)
         except:
-            QMessageBox.about(self, "Error Download",
-                              "Download failed for song: %s" % self.track.title)
+            self.fail_box()
             self.setDisabled(False)
             self.bar_dl.hide()
             return False
@@ -364,6 +371,17 @@ class WindowSR(QMainWindow):
         self.bar_dl.hide()
         return True
 
+    def fail_box(self):
+        """Fail box for playlist and single song"""
+
+        if self.is_playlist:
+            QMessageBox.about(self, "Error Download",
+                              "Playlist '%s' failed to download." % self.text_url.text().rsplit('/', 1)[-1])
+        else:
+            QMessageBox.about(self, "Error Download",
+                              "Download failed for song: %s" % self.track.title)
+
+
     def reset(self):
         """Reset all input & image after end of download"""
 
@@ -372,6 +390,7 @@ class WindowSR(QMainWindow):
         self.name.setText("")
         self.album.setText("")
         self.genre.setText("")
+        self.image = None
         self.cover.load("unknownperson.jpg")
         self.label_image.setPixmap(self.cover)
         self.but_dl.setDisabled(True)
@@ -400,6 +419,8 @@ class WindowSR(QMainWindow):
 
         # Determine the mime
         artwork_url = self.modifiy_image_size()
+        if not artwork_url:
+            return
         mime = "image/jpeg"
         if ".png" in artwork_url:
             mime = "image/png"
@@ -416,8 +437,6 @@ class WindowSR(QMainWindow):
                 )
         )
         audio_file.save()
-        
-        audio_file = EasyMP3(self.fi_mp3)
 
     def success_box(self):
         """Display a sucess box"""

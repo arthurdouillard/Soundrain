@@ -8,9 +8,9 @@ Usage:
 from setuptools import setup
 
 APP = ['SoundRain.py']
-DATA_FILES = [('.', ['resources/'])]
+DATA_FILES = [('.', ['unknownperson.jpg'])]
 OPTIONS = {'argv_emulation': True,
-           "iconfile": "resources/soundrainlogo.icns",
+           "iconfile": "soundrainlogo.icns",
            "includes": ['sip', 'PyQt5._qt']}
 
 setup(
