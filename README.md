@@ -42,9 +42,9 @@ If you like the music, support the artist !
 ### How to use it
 
 You'll need module from requirements.txt plus pyqt5 and sip.
-    pip install -r requirements.txt
-    brew install sip
-    brew install pyqt5
+`pip install -r requirements.txt`
+`brew install sip`
+`brew install pyqt5`
 
 To launch it in CLI:
 `python3 SoundRain.py`
