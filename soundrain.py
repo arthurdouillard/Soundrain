@@ -26,7 +26,6 @@ import requests
 from mutagen.mp3        import  MP3,           EasyMP3
 from mutagen.id3        import  ID3,           APIC
 
-
 class WindowSR(QMainWindow):
     """Main window of SoundRain"""
 
@@ -249,28 +248,38 @@ class WindowSR(QMainWindow):
             if "/sets/" in self.text_url.text(): # Is playlist
                 self.artist.setText("Not available for playlist.")
                 self.name.setText("Not available for playlist.")
-                self.disable_input()
+                self.disable_input(True)
+            elif len(self.text_url.text().split('/')) == 4: # Likes
+                self.artist.setText("Not available for likes.")
+                self.name.setText("Not available for likes.")
+                self.disable_input(False)
             else:
                 self.enable_input()
             self.get_music_info()
 
-    def disable_input(self):
+    def disable_input(self, bo):
         """Disable artist, and name in case of playlist"""
 
-        self.is_playlist = True
+        if bo:
+          self.is_playlist = True
+          self.is_likes = False
+        else:
+          self.is_playlist = False
+          self.is_likes = True
         self.artist.setDisabled(True)
         self.name.setDisabled(True)
 
     def enable_input(self):
         """Enable artist, and name after a playlist"""
 
+        self.is_likes = False
         self.is_playlist = False
         self.artist.setDisabled(False)
         self.name.setDisabled(False)
 
     def get_track(self):
         """Returns track"""
-       
+
         http_page = httplib2.Http()
         resp = http_page.request(self.url_str, "HEAD")
         if int(resp[0]["status"]) >= 400:
@@ -295,7 +304,7 @@ class WindowSR(QMainWindow):
         if not self.get_track():
             return
 
-        if not self.is_playlist:
+        if not self.is_playlist and not self.is_likes:
             self.artist.setText(self.track.user['username'])
             self.name.setText(self.track.title)
             url = self.modifiy_image_size()
@@ -309,7 +318,8 @@ class WindowSR(QMainWindow):
             self.album.setText(self.text_url.text().rsplit('/', 1)[-1])
             if self.album.text() != "":
                 self.text_file.setText("%s/%s" % (self.text_file.text(), self.album.text()))
-        self.genre.setText(self.track.genre)
+        if not self.is_likes:
+          self.genre.setText(self.track.genre)
 
     def modifiy_image_size(self):
         """Change artwork_url so the image can (potentially) look better"""
@@ -336,8 +346,24 @@ class WindowSR(QMainWindow):
                 self.get_track()
                 self.image = requests.get(self.modifiy_image_size()).content
                 self.download()
-
             if len(playlist.tracks) == 0:
+                self.fail_box()
+            else:
+                self.success_box() # Success box for playlist
+            self.label_dl.hide()
+            self.enable_input()
+        elif self.is_likes:
+            likes = self.client.get('/users/%s/favorites/?limit=200' % (self.track.id))
+            count = 1
+            self.label_dl.show()
+            for like in likes:
+              self.url_str = like.user['permalink_url']
+              self.track = like
+              self.label_dl.setText("%d / %d" % (count, len(likes)))
+              count += 1
+              self.image = requests.get(self.modifiy_image_size()).content
+              self.download()
+            if len(likes) == 0:
                 self.fail_box()
             else:
                 self.success_box() # Success box for playlist
@@ -410,6 +436,9 @@ class WindowSR(QMainWindow):
         if self.is_playlist:
             audio_file["artist"] = self.track.user["username"]
             audio_file["title"]  = self.track.title
+        if self.is_likes:
+            audio_file["artist"] = self.track.user["username"]
+            audio_file["title"] = self.track.title
         else:
             audio_file["artist"] = self.artist.text()
             audio_file["title"]  = self.name.text()
@@ -456,7 +485,7 @@ class WindowSR(QMainWindow):
 
     def create_filename(self):
         path = self.text_file.text()
-        if self.is_playlist:
+        if self.is_playlist or self.is_likes:
             name = self.track.title + ".mp3"
         else:
             name = self.name.text() + ".mp3"
@@ -494,7 +523,6 @@ class WindowSR(QMainWindow):
         return
 
 
-        
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
