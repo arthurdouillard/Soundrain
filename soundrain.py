@@ -353,18 +353,29 @@ class WindowSR(QMainWindow):
             self.label_dl.hide()
             self.enable_input()
         elif self.is_likes:
-            likes = self.client.get('/users/%s/favorites/?limit=200' % (self.track.id))
+            likes = self.client.get('/users/%s/favorites/' % (self.track.id),
+                                    linked_partitioning=1, limit=200)
+            set_likes = set()
+            while True:
+              try:
+                link = likes.next_href
+              except:
+                break
+              for like in likes.collection:
+                set_likes.add(like)
+              likes = self.client.get(link, linked_partitioning=1,
+                                      limit=200)
+            for like in likes.collection:
+              set_likes.add(like)
             count = 1
             self.label_dl.show()
-            for like in likes:
+            for like in set_likes:
               self.url_str = like.user['permalink_url']
               self.track = like
-              self.label_dl.setText("%d / %d" % (count, len(likes)))
+              self.label_dl.setText("%d / %d" % (count, len(set_likes)))
               count += 1
               self.image = requests.get(self.modifiy_image_size()).content
               self.download()
-            if len(likes) == 0:
-                self.fail_box()
             else:
                 self.success_box() # Success box for playlist
             self.label_dl.hide()
