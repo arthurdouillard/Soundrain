@@ -320,6 +320,8 @@ class WindowSR(QMainWindow):
                 self.text_file.setText("%s/%s" % (self.text_file.text(), self.album.text()))
         if not self.is_likes:
           self.genre.setText(self.track.genre)
+        else:
+          self.album.setText(self.track.username + "'s favorites")
 
     def modifiy_image_size(self):
         """Change artwork_url so the image can (potentially) look better"""
@@ -376,6 +378,7 @@ class WindowSR(QMainWindow):
               count += 1
               self.image = requests.get(self.modifiy_image_size()).content
               self.download()
+              sys.exit(0)
             else:
                 self.success_box() # Success box for playlist
             self.label_dl.hide()
