@@ -60,3 +60,4 @@ dist/
 build/
 Makefile
 setup.py
+.DS_Store
