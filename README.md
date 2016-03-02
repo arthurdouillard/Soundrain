@@ -32,19 +32,21 @@ so it can DL your music :)
 
 ---
 
-### Beware
+### README
 
-With SoundRain you can even download music that the artist didn't allow to download.
-If you like the music, support the artist !
+If you like the music, support the artist ! Buy its music !:)
 
 ---
 
 ### How to use it
 
 You'll need module from requirements.txt plus pyqt5 and sip.
-`pip install -r requirements.txt`
-`brew install sip`
-`brew install pyqt5`
+* `pip install -r requirements.txt`
+
+if using OSX and Homebrew:
+* `brew install sip`
+* `brew install pyqt5`
+Else use your favorite package manager (as pyqt and sip aren't available on pip):
 
 To launch it in CLI:
 `python3 SoundRain.py`
@@ -53,23 +55,14 @@ To launch it in CLI:
 
 ### TODO List
 
-- [X] GUI
-- [X] Can download single music
-- [X] Ask at first start for the 'client ID'
-- [X] Create a Soundrain.app
-- [ ] Improved GUI
-- [ ] InApp tutorial | Web tutorial
-- [X] Can download playlist
-- [ ] Add shortcut
-- [ ] Split code for GUI and Downloader into two different files (I'm laaazy)
-- [ ] Add a link to place where you can buy artist's music
+- [X] GUI.
+- [X] Can download single music.
+- [X] Ask at first start for the 'client ID'.
+- [ ] InApp tutorial | Web tutorial.
+- [X] Can download playlist.
+- [X] Can download likes.
+- [ ] Add shortcut.
+- [ ] Split code for GUI and Downloader into two different files (I'm laaazy).
+- [ ] Add a link to place where you can buy artist's music.
 
 ---
-
-### Bundle
-
-If you want to bundle for OS X, install py2app and run:
-
-* `make` for standalone
-* `make debug` for semi-standalone
-* `make clean` for removing `dist/` and `build/`
